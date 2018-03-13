@@ -18,16 +18,21 @@ $es = Faraday.new($host) do |conn|
   conn.adapter(Faraday.default_adapter)
 end
 
+def format_faraday_error(error)
+  {
+    status: error.response.fetch(:status),
+    error: {
+      message: error.message,
+      backtrace: error.backtrace.join("\n")
+    }
+  }
+end
+
 def run
   uninitialized_indices.each do |index_name|
     initialize_rollover_for_index(index_name)
   rescue StandardError => e
-    $logasm.error(
-      'Failed to initialize rollover for index',
-      message: e.message,
-      status: e.status,
-      backtrace: e.backtrace.join("\n")
-    )
+    $logasm.error('Failed to initialize rollover for index', format_faraday_error(e))
     next # continue with other indices
   end
 
@@ -101,6 +106,9 @@ def rollover_aliases
       end
       matching_aliases.first
     end
+rescue Faraday::ResourceNotFound => e
+  $logasm.warn('Elasticsearch returned 404 for rollover_aliases request', format_faraday_error(e))
+  []
 end
 
 ROLLOVER_RESULT_CONTEXT = %w[old_index new_index rolled_over acknowledged].freeze
