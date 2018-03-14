@@ -129,3 +129,5 @@ def rollover(alias_name)
     $logasm.info('Skipped rolling over an alias', log_context)
   end
 end
+
+run
