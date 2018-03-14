@@ -10,6 +10,9 @@ ES_INDEX_PATTERN = '*-*-log'
 REGEX_INDEX_PATTERN = /^.*-.*-log$/
 
 $host = ENV.fetch('ELASTICSEARCH_URL', 'http://localhost:9200')
+$max_age = ENV.fetch('MAX_AGE', '7d')
+$max_docs = Integer(ENV.fetch('MAX_DOCS', '400000000'), 10) # 400m
+
 $logasm = Logasm.build('myApp', stdout: nil)
 $es = Faraday.new($host) do |conn|
   conn.request(:json)
@@ -114,7 +117,10 @@ end
 ROLLOVER_RESULT_CONTEXT = %w[old_index new_index rolled_over acknowledged].freeze
 def rollover(alias_name)
   $logasm.info('Executing rollover for alias', alias: alias_name)
-  response = $es.post("#{alias_name}/_rollover", conditions: {max_docs: 1})
+  response = $es.post("#{alias_name}/_rollover", conditions: {
+    max_age: $max_age,
+    max_docs: $max_docs
+  })
 
   log_context = response.body.slice(*ROLLOVER_RESULT_CONTEXT).merge(alias: alias_name)
   if response.body.fetch('rolled_over')
