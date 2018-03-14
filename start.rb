@@ -29,7 +29,7 @@ def format_error(error)
     }
   }
 
-  if error.is_a?(Faraday::ClientError)
+  if error.is_a?(Faraday::ClientError) && error.response
     base_context.merge(status: error.response.fetch(:status))
   else
     base_context
