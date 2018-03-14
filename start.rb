@@ -75,7 +75,9 @@ def reindex(from:, to:) # rubocop:disable Naming/UncommunicativeMethodParamName
     '_reindex?wait_for_active_shards=all&requests_per_second=500&timeout=1h',
     source: {index: from},
     dest: {index: to}
-  )
+  ) do |req|
+    req.options.timeout = 60 * 60 # an hour in seconds
+  end
 
   log_context = response.body.slice(*REINDEX_RESULT_CONTEXT).merge(from: from, to: to)
   $logasm.info('Reindexing result', log_context)
