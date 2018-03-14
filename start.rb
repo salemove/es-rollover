@@ -29,7 +29,7 @@ def format_error(error)
     }
   }
 
-  if error.is_a?(Faraday::ClientError)
+  if error.is_a?(Faraday::ClientError) && error.response
     base_context.merge(status: error.response.fetch(:status))
   else
     base_context
@@ -71,7 +71,11 @@ end
 REINDEX_RESULT_CONTEXT = %w[timed_out total created updated took].freeze
 def reindex(from:, to:) # rubocop:disable Naming/UncommunicativeMethodParamName
   $logasm.info('Reindexing data from index to rename with suffix', from: from, to: to)
-  response = $es.post('_reindex', source: {index: from}, dest: {index: to})
+  response = $es.post(
+    '_reindex?wait_for_active_shards=all&requests_per_second=500&timeout=1h',
+    source: {index: from},
+    dest: {index: to}
+  )
 
   log_context = response.body.slice(*REINDEX_RESULT_CONTEXT).merge(from: from, to: to)
   $logasm.info('Reindexing result', log_context)
