@@ -68,7 +68,7 @@ def reindex(from:, to:) # rubocop:disable Naming/UncommunicativeMethodParamName
   log_context = response.body.slice(*REINDEX_RESULT_CONTEXT).merge(from: from, to: to)
   $logasm.info('Reindexing result', log_context)
 
-  return if response.body.fetch('created') == 1
+  return if response.body.fetch('total') >= 1
   $logasm.info('Reindex did not create a new index, creating empty index', from: from, to: to)
   $es.put(to)
 end
