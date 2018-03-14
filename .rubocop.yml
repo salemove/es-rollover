@@ -1,0 +1,13 @@
+inherit_gem:
+  rubocop-salemove: config/default.yml
+
+# It's a script. Script-level variables are OK.
+Style/GlobalVars:
+  Enabled: False
+
+Metrics/MethodLength:
+  CountComments: false
+  Max: 20
+
+Metrics/AbcSize:
+  Max: 20
