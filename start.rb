@@ -9,6 +9,8 @@ require 'logasm'
 ES_INDEX_PATTERN = '*-*-log'
 REGEX_INDEX_PATTERN = /^.*-.*-log$/
 
+$log_level = ENV.fetch('LOG_LEVEL', 'info')
+$log_json = ENV.fetch('LOG_JSON', 'false') == 'true'
 $host = ENV.fetch('ELASTICSEARCH_URL', 'http://localhost:9200')
 $max_age = ENV.fetch('MAX_AGE', '7d')
 $max_docs = Integer(ENV.fetch('MAX_DOCS', '400000000'), 10) # 400m
@@ -17,7 +19,7 @@ $max_docs = Integer(ENV.fetch('MAX_DOCS', '400000000'), 10) # 400m
 # a while, while they're buffered for STDOUT. Setting STDOUT to sync mode
 # avoids buffering, so it's easier to gauge progress.
 $stdout.sync = true
-$logger = Logasm.build('myApp', stdout: nil)
+$logger = Logasm.build('es-rollover', stdout: {level: $log_level, json: $log_json})
 $es = Faraday.new($host) do |conn|
   conn.request(:json)
   conn.response(:json, content_type: /\bjson$/)
