@@ -13,7 +13,7 @@ $log_level = ENV.fetch('LOG_LEVEL', 'info')
 $log_json = ENV.fetch('LOG_JSON', 'false') == 'true'
 $host = ENV.fetch('ELASTICSEARCH_URL', 'http://localhost:9200')
 $max_age = ENV.fetch('MAX_AGE', '7d')
-$max_docs = Integer(ENV.fetch('MAX_DOCS', '400000000'), 10) # 400m
+$max_size = ENV.fetch('MAX_SIZE', '20gb')
 
 # During slow operations, such as reindexing, the logs may not be flushed for
 # a while, while they're buffered for STDOUT. Setting STDOUT to sync mode
@@ -156,7 +156,7 @@ def rollover(alias_name)
   $logger.info('Executing rollover for alias', alias: alias_name)
   response = $es.post("#{alias_name}/_rollover", conditions: {
     max_age: $max_age,
-    max_docs: $max_docs
+    max_size: $max_size
   })
 
   log_context = response.body.slice(*ROLLOVER_RESULT_CONTEXT).merge(alias: alias_name)
