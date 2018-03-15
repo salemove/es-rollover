@@ -13,6 +13,10 @@ $host = ENV.fetch('ELASTICSEARCH_URL', 'http://localhost:9200')
 $max_age = ENV.fetch('MAX_AGE', '7d')
 $max_docs = Integer(ENV.fetch('MAX_DOCS', '400000000'), 10) # 400m
 
+# During slow operations, such as reindexing, the logs may not be flushed for
+# a while, while they're buffered for STDOUT. Setting STDOUT to sync mode
+# avoids buffering, so it's easier to gauge progress.
+$stdout.sync = true
 $logasm = Logasm.build('myApp', stdout: nil)
 $es = Faraday.new($host) do |conn|
   conn.request(:json)
