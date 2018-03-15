@@ -37,22 +37,38 @@ def format_error(error)
 end
 
 def run
-  uninitialized_indices.each do |index_name|
+  uninitialized_indices = fetch_uninitialized_indices
+  uninitialized_indices.each.with_index do |index_name, i|
     initialize_rollover_for_index(index_name)
+    $logasm.info(
+      'Finished initializing rollover for index',
+      index: index_name,
+      total_indices: uninitialized_indices.length,
+      indices_finished: i + 1,
+      indices_left: uninitialized_indices.length - (i + 1)
+    )
   rescue StandardError => e
-    $logasm.error('Failed to initialize rollover for index', format_error(e))
+    $logasm.error('Failed to initialize rollover for index', format_error(e).merge(index: index_name))
     next # continue with other indices
   end
 
-  rollover_aliases.each do |alias_name|
+  rollover_aliases = fetch_rollover_aliases
+  rollover_aliases.each.with_index do |alias_name, i|
     rollover(alias_name)
+    $logasm.info(
+      'Finished rollover for alias',
+      alias: alias_name,
+      total_aliases: rollover_aliases.length,
+      aliases_finished: i + 1,
+      aliases_left: rollover_aliases.length - (i + 1)
+    )
   rescue StandardError => e
-    $logasm.error('Failed to rollover index', format_error(e))
+    $logasm.error('Failed to rollover alias', format_error(e).merge(alias: alias_name))
     next # continue with other aliases
   end
 end
 
-def uninitialized_indices
+def fetch_uninitialized_indices
   $es.get(ES_INDEX_PATTERN)
     .body
     .select { |index_name, _index| index_name.match?(REGEX_INDEX_PATTERN) }
@@ -103,7 +119,7 @@ def initialize_rollover_for_index(index_name)
   replace_index_with_alias(index: index_name, alias_to: new_index_name)
 end
 
-def rollover_aliases
+def fetch_rollover_aliases
   $es.get("_alias/#{ES_INDEX_PATTERN}")
     .body
     .values
