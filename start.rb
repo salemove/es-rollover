@@ -17,7 +17,7 @@ $max_docs = Integer(ENV.fetch('MAX_DOCS', '400000000'), 10) # 400m
 # a while, while they're buffered for STDOUT. Setting STDOUT to sync mode
 # avoids buffering, so it's easier to gauge progress.
 $stdout.sync = true
-$logasm = Logasm.build('myApp', stdout: nil)
+$logger = Logasm.build('myApp', stdout: nil)
 $es = Faraday.new($host) do |conn|
   conn.request(:json)
   conn.response(:json, content_type: /\bjson$/)
@@ -44,7 +44,7 @@ def run
   uninitialized_indices = fetch_uninitialized_indices
   uninitialized_indices.each.with_index do |index_name, i|
     initialize_rollover_for_index(index_name)
-    $logasm.info(
+    $logger.info(
       'Finished initializing rollover for index',
       index: index_name,
       total_indices: uninitialized_indices.length,
@@ -52,7 +52,7 @@ def run
       indices_left: uninitialized_indices.length - (i + 1)
     )
   rescue StandardError => e
-    $logasm.error(
+    $logger.error(
       'Failed to initialize rollover for index. Continuing with the rest.',
       format_error(e).merge(index: index_name)
     )
@@ -61,7 +61,7 @@ def run
   rollover_aliases = fetch_rollover_aliases
   rollover_aliases.each.with_index do |alias_name, i|
     rollover(alias_name)
-    $logasm.info(
+    $logger.info(
       'Finished rollover for alias',
       alias: alias_name,
       total_aliases: rollover_aliases.length,
@@ -69,7 +69,7 @@ def run
       aliases_left: rollover_aliases.length - (i + 1)
     )
   rescue StandardError => e
-    $logasm.error(
+    $logger.error(
       'Failed to rollover alias. Continuing with the rest.',
       format_error(e).merge(alias: alias_name)
     )
@@ -84,7 +84,7 @@ def fetch_uninitialized_indices
 end
 
 def disable_writes(index_name)
-  $logasm.info('Disabling writes for index', index: index_name)
+  $logger.info('Disabling writes for index', index: index_name)
   $es.put("#{index_name}/_settings", 'index.blocks.write': true)
 end
 
@@ -94,7 +94,7 @@ end
 
 REINDEX_RESULT_CONTEXT = %w[timed_out total created updated took].freeze
 def reindex(from:, to:) # rubocop:disable Naming/UncommunicativeMethodParamName
-  $logasm.info('Reindexing data from index to rename with suffix', from: from, to: to)
+  $logger.info('Reindexing data from index to rename with suffix', from: from, to: to)
   response = $es.post(
     '_reindex?wait_for_active_shards=all&requests_per_second=500&timeout=1h',
     source: {index: from},
@@ -104,15 +104,15 @@ def reindex(from:, to:) # rubocop:disable Naming/UncommunicativeMethodParamName
   end
 
   log_context = response.body.slice(*REINDEX_RESULT_CONTEXT).merge(from: from, to: to)
-  $logasm.info('Reindexing result', log_context)
+  $logger.info('Reindexing result', log_context)
 
   return if response.body.fetch('total') >= 1
-  $logasm.info('Reindex did not create a new index, creating empty index', from: from, to: to)
+  $logger.info('Reindex did not create a new index, creating empty index', from: from, to: to)
   $es.put(to)
 end
 
 def replace_index_with_alias(index:, alias_to:)
-  $logasm.info('Deleting index and replacing with alias', index: index, alias_to: alias_to)
+  $logger.info('Deleting index and replacing with alias', index: index, alias_to: alias_to)
   $es.post('_aliases', actions: [
     {add: {index: alias_to, alias: index}},
     {remove_index: {index: index}}
@@ -120,7 +120,7 @@ def replace_index_with_alias(index:, alias_to:)
 end
 
 def initialize_rollover_for_index(index_name)
-  $logasm.info('Starting rollover initialization', index: index_name)
+  $logger.info('Starting rollover initialization', index: index_name)
   disable_writes(index_name)
   new_index_name = create_name_with_counter_suffix(index_name)
   reindex(from: index_name, to: new_index_name)
@@ -135,7 +135,7 @@ def fetch_rollover_aliases
       all_aliases = index.fetch('aliases').keys
       matching_aliases = all_aliases.select { |alias_name| alias_name.match?(REGEX_INDEX_PATTERN) }
       if matching_aliases.count != 1
-        $logasm.error(
+        $logger.error(
           'Expected exactly one matching alias',
           all_aliases: all_aliases,
           matching_aliases: matching_aliases
@@ -145,13 +145,13 @@ def fetch_rollover_aliases
       matching_aliases.first
     end
 rescue Faraday::ResourceNotFound => e
-  $logasm.warn('Elasticsearch returned 404 for rollover_aliases request', format_error(e))
+  $logger.warn('Elasticsearch returned 404 for rollover_aliases request', format_error(e))
   []
 end
 
 ROLLOVER_RESULT_CONTEXT = %w[old_index new_index rolled_over acknowledged].freeze
 def rollover(alias_name)
-  $logasm.info('Executing rollover for alias', alias: alias_name)
+  $logger.info('Executing rollover for alias', alias: alias_name)
   response = $es.post("#{alias_name}/_rollover", conditions: {
     max_age: $max_age,
     max_docs: $max_docs
@@ -159,9 +159,9 @@ def rollover(alias_name)
 
   log_context = response.body.slice(*ROLLOVER_RESULT_CONTEXT).merge(alias: alias_name)
   if response.body.fetch('rolled_over')
-    $logasm.info('Successfully rolled over alias to new index', log_context)
+    $logger.info('Successfully rolled over alias to new index', log_context)
   else
-    $logasm.info('Skipped rolling over an alias', log_context)
+    $logger.info('Skipped rolling over an alias', log_context)
   end
 end
 
