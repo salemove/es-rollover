@@ -52,8 +52,10 @@ def run
       indices_left: uninitialized_indices.length - (i + 1)
     )
   rescue StandardError => e
-    $logasm.error('Failed to initialize rollover for index', format_error(e).merge(index: index_name))
-    next # continue with other indices
+    $logasm.error(
+      'Failed to initialize rollover for index. Continuing with the rest.',
+      format_error(e).merge(index: index_name)
+    )
   end
 
   rollover_aliases = fetch_rollover_aliases
@@ -67,8 +69,10 @@ def run
       aliases_left: rollover_aliases.length - (i + 1)
     )
   rescue StandardError => e
-    $logasm.error('Failed to rollover alias', format_error(e).merge(alias: alias_name))
-    next # continue with other aliases
+    $logasm.error(
+      'Failed to rollover alias. Continuing with the rest.',
+      format_error(e).merge(alias: alias_name)
+    )
   end
 end
 
