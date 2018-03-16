@@ -90,8 +90,13 @@ def disable_writes(index_name)
   $es.put("#{index_name}/_settings", 'index.blocks.write': true)
 end
 
-def create_name_with_counter_suffix(index_name)
-  "#{index_name}-000001"
+def rollover_name_for(index_name)
+  # Check if there are existing indices with a counter (e.g. from a snapshot
+  # restore). If so, use the largest (i.e. latest) one. Otherwise start from 1.
+  # Zero padding is used to ensure that alphabetical ordering equals numerical
+  # ordering.
+  $es.get("#{index_name}-*,-#{index_name}-*.*.*").body.keys.sort.last ||
+    "#{index_name}-000001"
 end
 
 REINDEX_RESULT_CONTEXT = %w[timed_out total created updated took].freeze
@@ -124,7 +129,7 @@ end
 def initialize_rollover_for_index(index_name)
   $logger.info('Starting rollover initialization', index: index_name)
   disable_writes(index_name)
-  new_index_name = create_name_with_counter_suffix(index_name)
+  new_index_name = rollover_name_for(index_name)
   reindex(from: index_name, to: new_index_name)
   replace_index_with_alias(index: index_name, alias_to: new_index_name)
 end
