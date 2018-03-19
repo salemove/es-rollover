@@ -12,4 +12,4 @@ RUN bundle install --deployment
 
 ADD . $APP_HOME
 
-CMD ["bundle", "exec", "ruby", "start.rb"]
+CMD ["bundle", "exec", "./start"]
