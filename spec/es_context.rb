@@ -31,16 +31,20 @@ RSpec.shared_context 'with Elasticsearch' do
     es.put(index)
   end
 
+  def create_alias(to:, name:) # rubocop:disable Naming/UncommunicativeMethodParamName
+    es.put("#{to}/_alias/#{name}")
+  end
+
   def refresh(index:)
     es.post("#{index}/_refresh")
   end
 
-  def es_rollover
+  def es_rollover(max_age: nil, max_size: nil)
     ESRollover.new(
       logger: test_logger,
       elasticsearch_url: es.url_prefix,
-      max_age: '1d',
-      max_size: '1gb',
+      max_age: max_age || '1d',
+      max_size: max_size || '1gb',
       reindex_wait_for_active_shards: 1,
       reindex_timeout_seconds: 10
     )
