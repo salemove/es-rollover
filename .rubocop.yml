@@ -1,6 +1,10 @@
 inherit_gem:
   rubocop-salemove: config/default.yml
 
+AllCops:
+  Exclude:
+    - bin/*
+
 Metrics/MethodLength:
   CountComments: false
   Max: 35

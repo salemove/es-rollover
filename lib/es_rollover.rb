@@ -127,8 +127,13 @@ class ESRollover
     @logger.info('Reindexing result', log_context)
 
     return if response.body.fetch('total') >= 1
-    @logger.info('Reindex did not create a new index, creating empty index', from: from, to: to)
-    @es.put(to)
+    @logger.info('Reindex did not create a new index. Checking if index already exists.', from: from, to: to)
+    begin
+      @es.head(to)
+    rescue Faraday::ResourceNotFound
+      @logger.info('Index does not exist. Creating it.', from: from, to: to)
+      @es.put(to)
+    end
   end
 
   def replace_index_with_alias(index:, alias_to:)
