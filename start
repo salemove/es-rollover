@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
+require 'rubygems'
+require 'bundler'
+Bundler.setup(:default)
+
 # During slow operations, such as reindexing, the logs may not be flushed for
 # a while, while they're buffered for STDOUT. Setting STDOUT to sync mode
 # avoids buffering, so it's easier to gauge progress.
