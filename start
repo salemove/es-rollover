@@ -15,7 +15,9 @@ ESRollover.new(
   }),
   elasticsearch_url: ENV.fetch('ELASTICSEARCH_URL', 'http://localhost:9200'),
   max_age: ENV.fetch('MAX_AGE', '7d'),
-  max_size: ENV.fetch('MAX_SIZE', '20gb')
+  max_size: ENV.fetch('MAX_SIZE', '20gb'),
+  reindex_wait_for_active_shards: 'all',
+  reindex_timeout_seconds: 60 * 60
 ).tap do |es_rollover|
   es_rollover.initialize_indices
   es_rollover.roll_indices_over

@@ -12,7 +12,10 @@ class ESRollover
   REINDEX_RESULT_CONTEXT = %w[timed_out total created updated took].freeze
   ROLLOVER_RESULT_CONTEXT = %w[old_index new_index rolled_over acknowledged].freeze
 
-  def initialize(logger:, elasticsearch_url:, max_age:, max_size:)
+  def initialize( # rubocop:disable Metrics/ParameterLists
+    logger:, elasticsearch_url:, max_age:, max_size:, reindex_timeout_seconds:,
+    reindex_wait_for_active_shards:
+  )
     @logger = logger
     @es = Faraday.new(
       elasticsearch_url,
@@ -25,6 +28,8 @@ class ESRollover
     end
     @max_age = max_age
     @max_size = max_size
+    @reindex_wait_for_active_shards = reindex_wait_for_active_shards
+    @reindex_timeout_seconds = reindex_timeout_seconds
   end
 
   def initialize_indices
@@ -106,11 +111,16 @@ class ESRollover
   def reindex(from:, to:) # rubocop:disable Naming/UncommunicativeMethodParamName
     @logger.info('Reindexing data from index to rename with suffix', from: from, to: to)
     response = @es.post(
-      '_reindex?wait_for_active_shards=all&requests_per_second=500&timeout=1h',
+      '_reindex' \
+        "?wait_for_active_shards=#{@reindex_wait_for_active_shards}" \
+        '&requests_per_second=500' \
+        "&timeout=#{@reindex_timeout_seconds}s",
       source: {index: from},
       dest: {index: to}
     ) do |req|
-      req.options.timeout = 60 * 60 # an hour in seconds
+      # add a small amount, so that the request times out on the Elasticsearch
+      # side, if possible
+      req.options.timeout = @reindex_timeout_seconds + 10
     end
 
     log_context = response.body.slice(*REINDEX_RESULT_CONTEXT).merge(from: from, to: to)

@@ -9,4 +9,4 @@ Metrics/AbcSize:
   Max: 35
 
 Metrics/ClassLength:
-  Max: 150
+  Max: 170
