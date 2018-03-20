@@ -14,7 +14,10 @@ class ESRollover
 
   def initialize(logger:, elasticsearch_url:, max_age:, max_size:)
     @logger = logger
-    @es = Faraday.new(elasticsearch_url) do |conn|
+    @es = Faraday.new(
+      elasticsearch_url,
+      headers: {'Content-Type' => 'application/json'}
+    ) do |conn|
       conn.request(:json)
       conn.response(:json, content_type: /\bjson$/)
       conn.use(Faraday::Response::RaiseError)
