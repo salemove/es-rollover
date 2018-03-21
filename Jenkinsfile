@@ -11,7 +11,8 @@ withResultReporting(slackChannel: '#tm-is') {
     passiveContainer(
       name: 'es',
       image: 'docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.2',
-      args: 'bin/elasticsearch -Ediscovery.type=single-node'
+      args: 'bin/elasticsearch -Ediscovery.type=single-node',
+      envVars: [envVar(key: 'test.key', value: 'value')]
     ),
     imageScanner.container()
   ]) {
