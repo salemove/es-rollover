@@ -6,12 +6,28 @@ def DOCKER_REGISTRY_URL            = 'https://662491802882.dkr.ecr.us-east-1.ama
 def DOCKER_REGISTRY_CREDENTIALS_ID = 'ecr:us-east-1:ecr-docker-push'
 
 withResultReporting(slackChannel: '#tm-is') {
-  inDockerAgent(containers: [imageScanner.container()]) {
+  inDockerAgent(containers: [
+    interactiveContainer(name: 'ruby', image: 'ruby:2.5'),
+    passiveContainer(
+      name: 'es',
+      image: 'docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.2',
+      args: 'bin/elasticsearch -Ediscovery.type=single-node'
+    ),
+    imageScanner.container()
+  ]) {
     def image, shortCommit
     stage('Build') {
       checkout(scm)
       shortCommit = sh(returnStdout: true, script: 'git log -n 1 --pretty=format:"%h"').trim()
       ansiColor('xterm') {
+        container('ruby') {
+          sh('''
+            bin/bundle install
+
+            bin/rubocop
+            bin/rspec
+          ''')
+        }
         image = docker.build(DOCKER_REPOSITORY_NAME)
       }
     }

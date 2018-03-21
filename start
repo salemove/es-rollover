@@ -1,0 +1,28 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'rubygems'
+require 'bundler'
+Bundler.setup(:default)
+
+# During slow operations, such as reindexing, the logs may not be flushed for
+# a while, while they're buffered for STDOUT. Setting STDOUT to sync mode
+# avoids buffering, so it's easier to gauge progress.
+$stdout.sync = true
+
+require 'logasm'
+require_relative 'lib/es_rollover'
+ESRollover.new(
+  logger: Logasm.build('es-rollover', stdout: {
+    level: ENV.fetch('LOG_LEVEL', 'info'),
+    json: ENV.fetch('LOG_JSON', 'false') == 'true'
+  }),
+  elasticsearch_url: ENV.fetch('ELASTICSEARCH_URL', 'http://localhost:9200'),
+  max_age: ENV.fetch('MAX_AGE', '7d'),
+  max_size: ENV.fetch('MAX_SIZE', '20gb'),
+  reindex_wait_for_active_shards: ENV.fetch('REINDEX_WAIT_FOR_ACTIVE_SHARDS', 'all'),
+  reindex_timeout_seconds: Integer(ENV.fetch('REINDEX_TIMEOUT_SECONDS', (60 * 60).to_s), 10)
+).tap do |es_rollover|
+  es_rollover.initialize_indices
+  es_rollover.roll_indices_over
+end

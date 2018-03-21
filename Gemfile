@@ -7,5 +7,6 @@ gem 'faraday_middleware', '~> 0.12.2'
 gem 'logasm', '~> 1.2.0'
 
 group :test, :development do
+  gem 'rspec', '~> 3.7.0'
   gem 'rubocop-salemove', '~> 0.0.2', require: false
 end
