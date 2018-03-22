@@ -175,6 +175,11 @@ class ESRollover
   end
 
   def rollover(alias_name)
+    if empty?(alias_name)
+      @logger.info('Alias points to an empty index. Not rolling it over', alias: alias_name)
+      return
+    end
+
     @logger.info('Executing rollover for alias', alias: alias_name)
     response = @es.post("#{alias_name}/_rollover", conditions: {
       max_age: @max_age,
@@ -187,5 +192,9 @@ class ESRollover
     else
       @logger.info('Skipped rolling over an alias', log_context)
     end
+  end
+
+  def empty?(index_or_alias)
+    @es.get("#{index_or_alias}/_doc/_count").body.fetch('count').zero?
   end
 end
