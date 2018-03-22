@@ -11,7 +11,8 @@ RSpec.describe ESRollover, '#roll_indices_over' do
     initial_index_name = "#{index_prefix}-000001"
     rolled_over_index_name = "#{index_prefix}-000002"
 
-    create_index(index: initial_index_name)
+    post_event(index: initial_index_name, message: 'A log')
+    refresh(index: initial_index_name)
     create_alias(to: initial_index_name, name: index_prefix)
     es_rollover(max_age: '1nanos').roll_indices_over
 
@@ -25,7 +26,8 @@ RSpec.describe ESRollover, '#roll_indices_over' do
     rolled_over_index_name = "#{index_prefix}-000002"
     message = 'Test log'
 
-    create_index(index: initial_index_name)
+    post_event(index: initial_index_name, message: 'A log')
+    refresh(index: initial_index_name)
     create_alias(to: initial_index_name, name: index_prefix)
     es_rollover(max_age: '1nanos').roll_indices_over
     post_event(index: index_prefix, message: message)
@@ -39,9 +41,23 @@ RSpec.describe ESRollover, '#roll_indices_over' do
     initial_index_name = "#{index_prefix}-000001"
     rolled_over_index_name = "#{index_prefix}-000002"
 
-    create_index(index: initial_index_name)
+    post_event(index: initial_index_name, message: 'A log')
+    refresh(index: initial_index_name)
     create_alias(to: initial_index_name, name: index_prefix)
     es_rollover(max_age: '1d').roll_indices_over
+
+    expect(es).to have_index(initial_index_name)
+    expect(es).not_to have_index(rolled_over_index_name)
+  end
+
+  it 'does not roll over empty indices older than max_age' do
+    index_prefix = "test-#{test_identifier}-log"
+    initial_index_name = "#{index_prefix}-000001"
+    rolled_over_index_name = "#{index_prefix}-000002"
+
+    create_index(index: initial_index_name)
+    create_alias(to: initial_index_name, name: index_prefix)
+    es_rollover(max_age: '1nanos').roll_indices_over
 
     expect(es).to have_index(initial_index_name)
     expect(es).not_to have_index(rolled_over_index_name)
