@@ -23,8 +23,8 @@ RSpec.shared_context 'with Elasticsearch' do
 
   after { es.delete("*#{test_identifier}*") }
 
-  def post_event(index:, message:)
-    es.post("#{index}/_doc/#{SecureRandom.hex}", message: message)
+  def post_event(index:, message:, mapping_type: '_doc')
+    es.post("#{index}/#{mapping_type}/#{SecureRandom.hex}", message: message)
   end
 
   def create_index(index:)
