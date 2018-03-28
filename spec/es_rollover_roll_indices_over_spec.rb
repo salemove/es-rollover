@@ -11,7 +11,7 @@ RSpec.describe ESRollover, '#roll_indices_over' do
     initial_index_name = "#{index_prefix}-000001"
     rolled_over_index_name = "#{index_prefix}-000002"
 
-    post_event(index: initial_index_name, message: 'A log')
+    post_event(index: initial_index_name, message: 'A log', mapping_type: 'arbitrary')
     refresh(index: initial_index_name)
     create_alias(to: initial_index_name, name: index_prefix)
     es_rollover(max_age: '1nanos').roll_indices_over

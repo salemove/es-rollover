@@ -195,6 +195,6 @@ class ESRollover
   end
 
   def empty?(index_or_alias)
-    @es.get("#{index_or_alias}/_doc/_count").body.fetch('count').zero?
+    @es.get("#{index_or_alias}/_count").body.fetch('count').zero?
   end
 end
