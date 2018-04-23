@@ -1,4 +1,5 @@
-@Library('cve-monitor') _
+@Library('pipeline-lib') _
+@Library('cve-monitor') __
 
 def MAIN_BRANCH                    = 'master'
 def DOCKER_REPOSITORY_NAME         = 'es-rollover'
