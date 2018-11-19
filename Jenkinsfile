@@ -6,7 +6,7 @@ def DOCKER_REPOSITORY_NAME         = 'es-rollover'
 def DOCKER_REGISTRY_URL            = 'https://662491802882.dkr.ecr.us-east-1.amazonaws.com'
 def DOCKER_REGISTRY_CREDENTIALS_ID = 'ecr:us-east-1:ecr-docker-push'
 
-withResultReporting(slackChannel: '#tm-is') {
+withResultReporting(slackChannel: '#tm-inf') {
   inDockerAgent(containers: [
     interactiveContainer(name: 'ruby', image: 'ruby:2.5'),
     passiveContainer(
