@@ -79,7 +79,7 @@ RSpec.describe ESRollover, '#initialize_indices' do
     expect(high_exisiting_suffixed_index).to have_event(message: message)
   end
 
-  it 'blocks writes on reindexing failure' do
+  it 'continues on reindexing failure' do
     index_name = "test-#{test_identifier}-log"
     suffixed_index = "#{index_name}-000001"
     old_message = 'Old log'
@@ -93,15 +93,17 @@ RSpec.describe ESRollover, '#initialize_indices' do
     refresh(index: index_name)
     rollover.initialize_indices
 
-    expect(es).not_to have_index(suffixed_index)
+    expect(es).to have_index(suffixed_index)
     expect(logger).to have_received(:error).once
-    expect(logger).to have_received(:error).with(/Failed to initialize rollover.*Continuing/, anything)
-    expect(index_name).to have_event(message: old_message)
+    expect(logger).to have_received(:error).with(/Reindexing failed/, anything)
 
-    # Writes to the index are blocked (they fail)
-    expect do
-      post_event(index: index_name, message: new_message)
-    end.to raise_error(Faraday::ClientError)
-    expect(index_name).not_to have_event(message: new_message)
+    # Old data is lost
+    expect(suffixed_index).not_to have_event(message: old_message)
+
+    # But new data can be sent
+    post_event(index: index_name, message: new_message)
+    refresh(index: suffixed_index)
+    # And is stored
+    expect(suffixed_index).to have_event(message: new_message)
   end
 end

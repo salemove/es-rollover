@@ -130,6 +130,9 @@ class ESRollover
     return if response.body.fetch('total') >= 1
     @logger.info('Reindex did not create a new index.', from: from, to: to)
     create_index_if_missing(to)
+  rescue StandardError => e
+    @logger.error('Reindexing failed', format_error(e).merge(from: from, to: to))
+    create_index_if_missing(to)
   end
 
   def create_index_if_missing(index)
