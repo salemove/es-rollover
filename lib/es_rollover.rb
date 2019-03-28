@@ -14,7 +14,7 @@ class ESRollover
 
   def initialize( # rubocop:disable Metrics/ParameterLists
     logger:, elasticsearch_url:, max_age:, max_size:, reindex_timeout_seconds:,
-    reindex_wait_for_active_shards:
+    reindex_wait_for_active_shards:, reindex_requests_per_second:
   )
     @logger = logger
     @es = Faraday.new(
@@ -30,6 +30,7 @@ class ESRollover
     @max_size = max_size
     @reindex_wait_for_active_shards = reindex_wait_for_active_shards
     @reindex_timeout_seconds = reindex_timeout_seconds
+    @reindex_requests_per_second = reindex_requests_per_second
   end
 
   def initialize_indices
@@ -113,7 +114,7 @@ class ESRollover
     response = @es.post(
       '_reindex' \
         "?wait_for_active_shards=#{@reindex_wait_for_active_shards}" \
-        '&requests_per_second=500' \
+        "&requests_per_second=#{@reindex_requests_per_second}" \
         "&timeout=#{@reindex_timeout_seconds}s",
       source: {index: from},
       dest: {index: to}
@@ -127,13 +128,19 @@ class ESRollover
     @logger.info('Reindexing result', log_context)
 
     return if response.body.fetch('total') >= 1
-    @logger.info('Reindex did not create a new index. Checking if index already exists.', from: from, to: to)
-    begin
-      @es.head(to)
-    rescue Faraday::ResourceNotFound
-      @logger.info('Index does not exist. Creating it.', from: from, to: to)
-      @es.put(to)
-    end
+    @logger.info('Reindex did not create a new index.', from: from, to: to)
+    create_index_if_missing(to)
+  rescue StandardError => e
+    @logger.error('Reindexing failed', format_error(e).merge(from: from, to: to))
+    create_index_if_missing(to)
+  end
+
+  def create_index_if_missing(index)
+    @logger.info('Checking if index already exists.', index: index)
+    @es.head(index)
+  rescue Faraday::ResourceNotFound
+    @logger.info('Index does not exist. Creating it.', index: index)
+    @es.put(index)
   end
 
   def replace_index_with_alias(index:, alias_to:)

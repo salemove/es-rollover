@@ -21,7 +21,8 @@ ESRollover.new(
   max_age: ENV.fetch('MAX_AGE', '7d'),
   max_size: ENV.fetch('MAX_SIZE', '20gb'),
   reindex_wait_for_active_shards: ENV.fetch('REINDEX_WAIT_FOR_ACTIVE_SHARDS', 'all'),
-  reindex_timeout_seconds: Integer(ENV.fetch('REINDEX_TIMEOUT_SECONDS', (60 * 60).to_s), 10)
+  reindex_timeout_seconds: Integer(ENV.fetch('REINDEX_TIMEOUT_SECONDS', (60 * 60).to_s), 10),
+  reindex_requests_per_second: Integer(ENV.fetch('REINDEX_TIMEOUT_SECONDS', '500'), 10)
 ).tap do |es_rollover|
   es_rollover.initialize_indices
   es_rollover.roll_indices_over
