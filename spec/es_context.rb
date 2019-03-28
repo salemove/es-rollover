@@ -46,7 +46,8 @@ RSpec.shared_context 'with Elasticsearch' do
       max_age: max_age || '1d',
       max_size: max_size || '1gb',
       reindex_wait_for_active_shards: 1,
-      reindex_timeout_seconds: 10
+      reindex_timeout_seconds: 10,
+      reindex_requests_per_second: 500
     )
   end
 

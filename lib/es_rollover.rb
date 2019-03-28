@@ -14,7 +14,7 @@ class ESRollover
 
   def initialize( # rubocop:disable Metrics/ParameterLists
     logger:, elasticsearch_url:, max_age:, max_size:, reindex_timeout_seconds:,
-    reindex_wait_for_active_shards:
+    reindex_wait_for_active_shards:, reindex_requests_per_second:
   )
     @logger = logger
     @es = Faraday.new(
@@ -30,6 +30,7 @@ class ESRollover
     @max_size = max_size
     @reindex_wait_for_active_shards = reindex_wait_for_active_shards
     @reindex_timeout_seconds = reindex_timeout_seconds
+    @reindex_requests_per_second = reindex_requests_per_second
   end
 
   def initialize_indices
@@ -113,7 +114,7 @@ class ESRollover
     response = @es.post(
       '_reindex' \
         "?wait_for_active_shards=#{@reindex_wait_for_active_shards}" \
-        '&requests_per_second=500' \
+        "&requests_per_second=#{@reindex_requests_per_second}" \
         "&timeout=#{@reindex_timeout_seconds}s",
       source: {index: from},
       dest: {index: to}
